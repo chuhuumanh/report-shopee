@@ -1,26 +1,89 @@
-import React from 'react';
-import logo from '../../assets/img/logo.svg';
-import Greetings from '../../containers/Greetings/Greetings';
 import './Popup.css';
+import React, { useState } from 'react';
+import {
+  Typography,
+  Card,
+  CardContent,
+  Divider,
+  Avatar,
+  Box,
+  TextField,
+  Button,
+} from '@mui/material';
 
 const Popup = () => {
+  const [startDate, setStartDate] = useState('2024-12-01');
+  const [endDate, setEndDate] = useState('2024-12-30');
+
+  const handleSubmit = () => {
+    chrome.runtime.sendMessage({
+      type: 'EXPORT_REPORT',
+      url: 'https://banhang.shopee.vn/',
+      data: {
+        startDate,
+        endDate,
+      },
+    });
+
+    // Reset fields after submission
+    setStartDate('');
+    setEndDate('');
+  };
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/pages/Popup/Popup.jsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
+    <Card sx={{ width: '100%', minHeight: 700 }}>
+      <CardContent>
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            bgcolor: '#ffffff',
+          }}
         >
-          Learn React!
-        </a>
-      </header>
-    </div>
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <Avatar
+              alt="Company Logo"
+              src="./icon-128.png"
+              sx={{ width: 40, height: 40, marginRight: 1 }}
+            />
+            <Typography
+              variant="h6"
+              sx={{ fontWeight: 'bold', color: '#ee4d2d', marginRight: 1 }}
+            >
+              Ads
+            </Typography>
+            <Typography
+              variant="h5"
+              sx={{ color: '#ee4d2d', fontWeight: 'bold' }}
+            >
+              Shoppe
+            </Typography>
+          </Box>
+        </Box>
+        <Divider sx={{ marginY: 2 }} />
+
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <TextField
+            label="Start Date"
+            type="date"
+            InputLabelProps={{ shrink: true }}
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
+          />
+          <TextField
+            label="End Date"
+            type="date"
+            InputLabelProps={{ shrink: true }}
+            value={endDate}
+            onChange={(e) => setEndDate(e.target.value)}
+          />
+          <Button variant="contained" color="primary" onClick={handleSubmit}>
+            Submit
+          </Button>
+        </Box>
+      </CardContent>
+    </Card>
   );
 };
 
