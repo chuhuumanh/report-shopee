@@ -13,7 +13,7 @@ import {
 
 const Popup = () => {
   const [startDate, setStartDate] = useState('2024-12-01');
-  const [endDate, setEndDate] = useState('2024-12-30');
+  const [endDate, setEndDate] = useState('2024-12-31');
 
   const handleSubmit = () => {
     chrome.runtime.sendMessage({
