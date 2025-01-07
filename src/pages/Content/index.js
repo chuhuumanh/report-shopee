@@ -6,6 +6,15 @@ const {
   getWalletReportById,
 } = require('./modules/shopee');
 const XLSX = require('xlsx');
+const dayjs = require('dayjs');
+
+function wait(ms) {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve(ms);
+    }, ms);
+  });
+}
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === 'EXPORT_REPORT') {
@@ -17,10 +26,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 });
 
 async function getOrdersByRange(startDate, endDate) {
-  // const resOrderReport = await requestOrderReport(startDate, endDate);
-  // const orderReport = resOrderReport.data;
-  const orderReport = {};
-  const reportId = orderReport.report_id || 20998824;
+  const resOrderReport = await requestOrderReport(startDate, endDate);
+  const orderReport = resOrderReport.data;
+  const reportId = orderReport.report_id;
+
   if (reportId) {
     const limit = 3;
     let retry = 0;
@@ -32,9 +41,9 @@ async function getOrdersByRange(startDate, endDate) {
         if (dataReport && dataReport.status > 1) {
           isReportSuccess = true;
         }
-
-        retry += 1;
+        await wait(2000);
       } catch (error) {
+        console.log(error);
         retry += 1;
       }
     }
@@ -48,18 +57,17 @@ async function getOrdersByRange(startDate, endDate) {
 }
 
 async function getOrdersWalletByRange(startDate, endDate) {
-  // const resWalletReport = await exportWalletTransaction({
-  //   wallet_provider: 0,
-  //   start_date: startDate,
-  //   end_date: endDate,
-  //   transaction_types: [
-  //     101, 401, 404, 406, 412, 415, 461, 413, 418, 462, 465, 468, 471, 472, 301,
-  //     505, 504, 302, 451, 303, 802,
-  //   ],
-  // });
-  // const walletReport = resWalletReport.data.wallet_transaction_report;
-  const walletReport = {};
-  const reportId = walletReport.report_id || 4153877;
+  const resWalletReport = await exportWalletTransaction({
+    wallet_provider: 0,
+    start_date: startDate,
+    end_date: dayjs().format('YYYY-MM-DD'),
+    transaction_types: [
+      101, 401, 404, 406, 412, 415, 461, 413, 418, 462, 465, 468, 471, 472, 301,
+      505, 504, 302, 451, 303, 802,
+    ],
+  });
+  const walletReport = resWalletReport.data.wallet_transaction_report;
+  const reportId = walletReport.report_id;
 
   if (reportId) {
     const limit = 3;
@@ -68,12 +76,11 @@ async function getOrdersWalletByRange(startDate, endDate) {
     while (!isReportSuccess && retry < limit) {
       try {
         const resReport = await getWalletReportById(reportId);
-        console.log(resReport, 'resReport');
         const dataReport = resReport.data.wallet_transaction_report;
         if (dataReport && dataReport.status > 1) {
           isReportSuccess = true;
         }
-        retry += 1;
+        await wait(2000);
       } catch (error) {
         console.log(error);
         retry += 1;
@@ -108,7 +115,10 @@ function generateTransactionObj(ordersWallet) {
 
 async function handleExportReport({ startDate, endDate }) {
   const orders = await getOrdersByRange(startDate, endDate);
+  console.log(orders, 'orders');
+
   const ordersWallet = await getOrdersWalletByRange(startDate, endDate);
+  console.log(ordersWallet, 'ordersWallet');
 
   const objTransaction = generateTransactionObj(ordersWallet);
   const ordersPaid = [];
@@ -149,7 +159,8 @@ async function handleExportReport({ startDate, endDate }) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = 'Orders_Report.xlsx';
+
+  a.download = `Orders_Report_${startDate}_${endDate}.xlsx`;
   document.body.appendChild(a);
   a.click();
 
