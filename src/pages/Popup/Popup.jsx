@@ -1,5 +1,5 @@
 import './Popup.css';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Typography,
   Card,
@@ -10,12 +10,68 @@ import {
   TextField,
   Button,
 } from '@mui/material';
+import axios from 'axios';
+
+const GOOGLE_API_KEY = 'AIzaSyA4MliCYL1Fq55V3CXQuNV5Fy9lyioJl6A';
+const GOOGLE_SHEET_ID = '18grB1nM7YjAVa-VOaug0ZtPyDD5A9pzwD1rPNB-pgBc';
+const SHEET_RANGE = 'A1:A100';
 
 const Popup = () => {
   const [startDate, setStartDate] = useState('2024-12-01');
   const [endDate, setEndDate] = useState('2024-12-31');
+  const [apiKey, setApiKey] = useState('');
+  const [isKeyActive, setIsKeyActive] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Load API Key từ localStorage khi mở extension
+  useEffect(() => {
+    const storedKey = localStorage.getItem('apiKey');
+    if (storedKey) {
+      checkKeyOnGoogleSheets(storedKey);
+    } else {
+      setIsLoading(false);
+    }
+  }, []);
+
+  const checkKeyOnGoogleSheets = async (key) => {
+    try {
+      setIsLoading(true);
+      const response = await axios.get(
+        `https://sheets.googleapis.com/v4/spreadsheets/${GOOGLE_SHEET_ID}/values/${SHEET_RANGE}?key=${GOOGLE_API_KEY}`
+      );
+      const validKeys = response.data.values.flat();
+
+      if (validKeys.includes(key)) {
+        setApiKey(key);
+        setIsKeyActive(true);
+      } else {
+        alert('API Key không hợp lệ hoặc đã hết hạn!');
+        setIsKeyActive(false);
+        localStorage.removeItem('apiKey');
+      }
+    } catch (error) {
+      console.error('Lỗi khi kiểm tra API Key:', error);
+      alert('Không thể kiểm tra API Key. Vui lòng thử lại!');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleActivateKey = () => {
+    if (apiKey.trim()) {
+      checkKeyOnGoogleSheets(apiKey);
+      localStorage.setItem('apiKey', apiKey);
+    } else {
+      alert('Vui lòng nhập API Key!');
+    }
+  };
 
   const handleSubmit = () => {
+    if (!isKeyActive) {
+      alert('API Key chưa được kích hoạt. Vui lòng nhập và kích hoạt API Key!');
+      return;
+    }
+
     chrome.runtime.sendMessage({
       type: 'EXPORT_REPORT',
       url: 'https://banhang.shopee.vn/',
@@ -63,25 +119,54 @@ const Popup = () => {
         </Box>
         <Divider sx={{ marginY: 2 }} />
 
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          <TextField
-            label="Start Date"
-            type="date"
-            InputLabelProps={{ shrink: true }}
-            value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
-          />
-          <TextField
-            label="End Date"
-            type="date"
-            InputLabelProps={{ shrink: true }}
-            value={endDate}
-            onChange={(e) => setEndDate(e.target.value)}
-          />
-          <Button variant="contained" color="primary" onClick={handleSubmit}>
-            Submit
-          </Button>
-        </Box>
+        {!isKeyActive ? (
+          <Box>
+            <Typography variant="h6" sx={{ marginBottom: 2 }}>
+              Vui lòng nhập API Key để kích hoạt
+            </Typography>
+            <TextField
+              label="Nhập API Key"
+              fullWidth
+              variant="outlined"
+              value={apiKey}
+              onChange={(e) => setApiKey(e.target.value)}
+              sx={{ marginBottom: 2 }}
+            />
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={handleActivateKey}
+              sx={{ textTransform: 'none', fontWeight: 'bold' }}
+            >
+              Kích hoạt
+            </Button>
+          </Box>
+        ) : (
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <TextField
+              label="Start Date"
+              type="date"
+              InputLabelProps={{ shrink: true }}
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+            />
+            <TextField
+              label="End Date"
+              type="date"
+              InputLabelProps={{ shrink: true }}
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+            />
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={handleSubmit}
+              sx={{ textTransform: 'none', fontWeight: 'bold' }}
+            >
+              Submit
+            </Button>
+          </Box>
+        )}
       </CardContent>
     </Card>
   );

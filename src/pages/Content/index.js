@@ -44,7 +44,6 @@ async function getOrdersByRange(startDate, endDate) {
           isReportSuccess = true;
         }
         await wait(2000);
-        retry += 1;
       } catch (error) {
         console.log(error);
         retry += 1;
@@ -84,7 +83,6 @@ async function getOrdersWalletByRange(startDate, endDate) {
           isReportSuccess = true;
         }
         await wait(2000);
-        retry += 1;
       } catch (error) {
         console.log(error);
         retry += 1;
