@@ -136,8 +136,8 @@ async function handleExportReport({ startDate, endDate }) {
   const orderNotPaid = [];
 
   for (const order of orders) {
+    if (order['Trạng thái Trả hàng/Hoàn tiền']) continue;
     const transactionId = order['Mã đơn hàng'];
-
     const walletTransaction = objTransaction[transactionId];
     if (walletTransaction) {
       ordersPaid.push({
@@ -145,12 +145,16 @@ async function handleExportReport({ startDate, endDate }) {
         ['Ngày đặt hàng']: order['Ngày đặt hàng'],
         ['Trạng Thái Đơn Hàng']: order['Trạng Thái Đơn Hàng'],
         ['Ngày thanh toán']: walletTransaction.datePaid,
+        ['Tổng số tiền người mua thanh toán']:
+          order['Tổng số tiền người mua thanh toán'],
       });
     } else {
       orderNotPaid.push({
         ['Mã đơn hàng']: order['Mã đơn hàng'],
         ['Ngày đặt hàng']: order['Ngày đặt hàng'],
         ['Trạng Thái Đơn Hàng']: order['Trạng Thái Đơn Hàng'],
+        ['Tổng số tiền người mua thanh toán']:
+          order['Tổng số tiền người mua thanh toán'],
       });
     }
   }
