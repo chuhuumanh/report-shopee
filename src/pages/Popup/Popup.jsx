@@ -10,11 +10,7 @@ import {
   TextField,
   Button,
 } from '@mui/material';
-import axios from 'axios';
-
-const GOOGLE_API_KEY = 'AIzaSyA4MliCYL1Fq55V3CXQuNV5Fy9lyioJl6A';
-const GOOGLE_SHEET_ID = '18grB1nM7YjAVa-VOaug0ZtPyDD5A9pzwD1rPNB-pgBc';
-const SHEET_RANGE = 'A1:A100';
+import { getData, updateData } from './firebase';
 
 const Popup = () => {
   const [startDate, setStartDate] = useState('2024-12-01');
@@ -27,28 +23,41 @@ const Popup = () => {
   useEffect(() => {
     const storedKey = localStorage.getItem('apiKey');
     if (storedKey) {
-      checkKeyOnGoogleSheets(storedKey);
+      checkKeyOnGoogleSheets(storedKey, true);
     } else {
       setIsLoading(false);
     }
   }, []);
 
-  const checkKeyOnGoogleSheets = async (key) => {
+  const checkKeyOnGoogleSheets = async (key, isCheckExist) => {
     try {
+      const listKeygen = await getData();
       setIsLoading(true);
-      const response = await axios.get(
-        `https://sheets.googleapis.com/v4/spreadsheets/${GOOGLE_SHEET_ID}/values/${SHEET_RANGE}?key=${GOOGLE_API_KEY}`
-      );
-      const validKeys = response.data.values.flat();
+      const keyCompare = listKeygen.find((item) => item?.key === key);
 
-      if (validKeys.includes(key)) {
-        setApiKey(key);
-        setIsKeyActive(true);
-      } else {
+      if (!keyCompare) {
         alert('API Key không hợp lệ hoặc đã hết hạn!');
         setIsKeyActive(false);
         localStorage.removeItem('apiKey');
+        return;
       }
+
+      if (!isCheckExist) {
+        if (keyCompare.count < 1) {
+          alert('API Key không hợp lệ hoặc đã hết hạn!');
+          setIsKeyActive(false);
+          localStorage.removeItem('apiKey');
+          return;
+        }
+      }
+
+      if (!isCheckExist) {
+        await updateData(keyCompare.index, {
+          count: +keyCompare.count - 1,
+        });
+      }
+      setApiKey(key);
+      setIsKeyActive(true);
     } catch (error) {
       console.error('Lỗi khi kiểm tra API Key:', error);
       alert('Không thể kiểm tra API Key. Vui lòng thử lại!');
