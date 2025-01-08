@@ -7,6 +7,7 @@ const {
 } = require('./modules/shopee');
 const XLSX = require('xlsx');
 const dayjs = require('dayjs');
+const { showToast } = require('./modules/notification');
 
 function wait(ms) {
   return new Promise((resolve) => {
@@ -18,6 +19,7 @@ function wait(ms) {
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === 'EXPORT_REPORT') {
+    showToast('Bắt đầu xử lý request sau 5s nữa !', 10000);
     setTimeout(() => {
       console.log('--- START REPORT ---');
       handleExportReport(message.data);
@@ -31,7 +33,7 @@ async function getOrdersByRange(startDate, endDate) {
   const reportId = orderReport.report_id;
 
   if (reportId) {
-    const limit = 3;
+    const limit = 5;
     let retry = 0;
     let isReportSuccess = false;
     while (!isReportSuccess && retry < limit) {
@@ -42,6 +44,7 @@ async function getOrdersByRange(startDate, endDate) {
           isReportSuccess = true;
         }
         await wait(2000);
+        retry += 1;
       } catch (error) {
         console.log(error);
         retry += 1;
@@ -60,7 +63,7 @@ async function getOrdersWalletByRange(startDate, endDate) {
   const resWalletReport = await exportWalletTransaction({
     wallet_provider: 0,
     start_date: startDate,
-    end_date: dayjs().format('YYYY-MM-DD'),
+    end_date: endDate,
     transaction_types: [
       101, 401, 404, 406, 412, 415, 461, 413, 418, 462, 465, 468, 471, 472, 301,
       505, 504, 302, 451, 303, 802,
@@ -81,6 +84,7 @@ async function getOrdersWalletByRange(startDate, endDate) {
           isReportSuccess = true;
         }
         await wait(2000);
+        retry += 1;
       } catch (error) {
         console.log(error);
         retry += 1;
@@ -114,15 +118,25 @@ function generateTransactionObj(ordersWallet) {
 }
 
 async function handleExportReport({ startDate, endDate }) {
+  showToast(`Bắt đầu lấy dữ liệu orders from ${startDate} to ${endDate} !`);
   const orders = await getOrdersByRange(startDate, endDate);
+  showToast(`Tổng số order lấy được là: ${orders.length}!`);
   console.log(orders, 'orders');
 
-  const ordersWallet = await getOrdersWalletByRange(startDate, endDate);
-  console.log(ordersWallet, 'ordersWallet');
+  showToast(
+    `Hoàn thành lấy orders, tổng số order cần xử lý là: ${orders.length} !`
+  );
+  const dateNow = dayjs().format('YYYY-MM-DD');
 
+  showToast(`Bắt đầu lấy dữ liệu wallet from ${startDate} to ${dateNow} !`);
+  const ordersWallet = await getOrdersWalletByRange(startDate, dateNow);
+  showToast(`Tổng số history wallet: ${ordersWallet.length} !`);
+
+  showToast(`Bắt đầu xử lý dữ liệu`);
   const objTransaction = generateTransactionObj(ordersWallet);
   const ordersPaid = [];
   const orderNotPaid = [];
+
   for (const order of orders) {
     const transactionId = order['Mã đơn hàng'];
 
@@ -169,6 +183,7 @@ async function handleExportReport({ startDate, endDate }) {
 
   // Giải phóng URL object
   URL.revokeObjectURL(url);
+  showToast(`Hoàn thành xử lý dữ liệu`);
 }
 
 // Hàm chuyển đổi từ binary string sang ArrayBuffer

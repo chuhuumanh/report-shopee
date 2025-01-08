@@ -51,13 +51,13 @@ const Popup = () => {
               variant="h6"
               sx={{ fontWeight: 'bold', color: '#ee4d2d', marginRight: 1 }}
             >
-              Ads
+              Nova
             </Typography>
             <Typography
               variant="h5"
               sx={{ color: '#ee4d2d', fontWeight: 'bold' }}
             >
-              Shoppe
+              Checking
             </Typography>
           </Box>
         </Box>
