@@ -3,8 +3,20 @@
   "name": "Report Shopee",
   "description": "A chrome extension boilerplate built with React 17, Webpack 5, and Webpack Dev Server 4",
   "background": { "service_worker": "background.bundle.js" },
-  "permissions": ["tabs", "activeTab", "scripting"],
-  "host_permissions": ["https://banhang.shopee.vn/*"],
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "tabs",
+    "http://*/",
+    "https://*/",
+    "cookies",
+    "webRequest",
+    "webRequestBlocking",
+    "storage",
+    "unlimitedStorage",
+    "browsingData"
+  ],
+  "host_permissions": ["https://banhang.shopee.vn/*", "https://shopee.vn/*"],
   "action": {
     "default_popup": "popup.html",
     "default_icon": "icon-34.png"

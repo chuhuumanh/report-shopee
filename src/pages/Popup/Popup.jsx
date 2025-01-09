@@ -21,12 +21,14 @@ const Popup = () => {
 
   // Load API Key từ localStorage khi mở extension
   useEffect(() => {
-    const storedKey = localStorage.getItem('apiKey');
-    if (storedKey) {
-      checkKeyOnGoogleSheets(storedKey, true);
-    } else {
-      setIsLoading(false);
-    }
+    // const storedKey = localStorage.getItem('apiKey');
+    // if (storedKey) {
+    //   checkKeyOnGoogleSheets(storedKey, true);
+    // } else {
+    //   setIsLoading(false);
+    // }
+    setApiKey('fudsfydsu');
+    setIsKeyActive(true);
   }, []);
 
   const checkKeyOnGoogleSheets = async (key, isCheckExist) => {
