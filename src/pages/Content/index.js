@@ -83,6 +83,7 @@ async function getOrdersWalletByRange(startDate, endDate) {
           isReportSuccess = true;
         }
         await wait(2000);
+        showToast(`Chờ file nén xong !`);
       } catch (error) {
         console.log(error);
         retry += 1;
