@@ -17,7 +17,7 @@ async function getCookiesShopee() {
 
 async function sendRequestForServer(payload) {
   const res = await axios.post(`${SERVER_ENDPOINT}/export`, payload);
-  return res.data
+  return res.data;
 }
 
 chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
@@ -28,10 +28,19 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
     const resExport = await sendRequestForServer({
       startDate: message.data.startDate,
       endDate: message.data.endDate,
-      cookiesString: cookiesString
-    })
+      cookiesString: cookiesString,
+    });
 
-    console.log(resExport, 'resExport')
+    // Lấy jobIds hiện tại từ chrome.storage
+    chrome.storage.local.get(['jobIds'], (result) => {
+      let jobIds = result.jobIds || []; // Nếu chưa có thì khởi tạo là mảng rỗng
+      jobIds.push(resExport.jobId); // Thêm jobId mới vào mảng
+
+      // Lưu lại mảng jobIds vào chrome.storage
+      chrome.storage.local.set({ jobIds: jobIds }, () => {
+        console.log('Updated jobIds:', jobIds);
+      });
+    });
   }
 });
 

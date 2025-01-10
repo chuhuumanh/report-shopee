@@ -9,6 +9,13 @@ import {
   Box,
   TextField,
   Button,
+  TableContainer,
+  Paper,
+  Table,
+  TableHead,
+  TableRow,
+  TableCell,
+  TableBody,
 } from '@mui/material';
 import { getData, updateData } from './firebase';
 
@@ -18,6 +25,8 @@ const Popup = () => {
   const [apiKey, setApiKey] = useState('');
   const [isKeyActive, setIsKeyActive] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [jobData, setJobData] = useState([]);
+  const [isFetchingJobs, setIsFetchingJobs] = useState(false);
 
   // Load API Key từ localStorage khi mở extension
   useEffect(() => {
@@ -30,6 +39,33 @@ const Popup = () => {
     setApiKey('fudsfydsu');
     setIsKeyActive(true);
   }, []);
+
+  useEffect(() => {
+    chrome.storage.local.get(['jobIds'], (result) => {
+      const jobIds = result.jobIds || [];
+      if (jobIds.length) {
+        // Đặt một khoảng thời gian để gọi lại API mỗi giây (1000ms)
+        setInterval(() => {
+          fetchJobStatus(jobIds); // Gọi hàm để kiểm tra trạng thái của các jobIds
+        }, 1000); // 1000ms = 1 giây
+      }
+    });
+  }, []);
+
+  const fetchJobStatus = async (jobIds) => {
+    setIsFetchingJobs(true);
+    try {
+      const response = await fetch(
+        `http://localhost:1997/job-status?jobIds=${jobIds.join(',')}`
+      );
+      const data = await response.json();
+      setJobData(data);
+    } catch (error) {
+      console.error('Lỗi khi lấy job status:', error);
+    } finally {
+      setIsFetchingJobs(false);
+    }
+  };
 
   const checkKeyOnGoogleSheets = async (key, isCheckExist) => {
     try {
@@ -91,10 +127,16 @@ const Popup = () => {
         endDate,
       },
     });
+  };
 
-    // Reset fields after submission
-    setStartDate('');
-    setEndDate('');
+  const handleDownload = (fileUrl) => {
+    if (fileUrl) {
+      const link = document.createElement('a');
+      link.href = fileUrl;
+      link.target = '_blank';
+      link.download = fileUrl.split('/').pop();
+      link.click();
+    }
   };
 
   return (
@@ -130,54 +172,65 @@ const Popup = () => {
         </Box>
         <Divider sx={{ marginY: 2 }} />
 
-        {!isKeyActive ? (
-          <Box>
-            <Typography variant="h6" sx={{ marginBottom: 2 }}>
-              Vui lòng nhập API Key để kích hoạt
-            </Typography>
-            <TextField
-              label="Nhập API Key"
-              fullWidth
-              variant="outlined"
-              value={apiKey}
-              onChange={(e) => setApiKey(e.target.value)}
-              sx={{ marginBottom: 2 }}
-            />
-            <Button
-              variant="contained"
-              color="primary"
-              onClick={handleActivateKey}
-              sx={{ textTransform: 'none', fontWeight: 'bold' }}
-            >
-              Kích hoạt
-            </Button>
-          </Box>
-        ) : (
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <TextField
-              label="Start Date"
-              type="date"
-              InputLabelProps={{ shrink: true }}
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-            />
-            <TextField
-              label="End Date"
-              type="date"
-              InputLabelProps={{ shrink: true }}
-              value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-            />
-            <Button
-              variant="contained"
-              color="primary"
-              onClick={handleSubmit}
-              sx={{ textTransform: 'none', fontWeight: 'bold' }}
-            >
-              Submit
-            </Button>
-          </Box>
-        )}
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <TextField
+            label="Start Date"
+            type="date"
+            InputLabelProps={{ shrink: true }}
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
+          />
+          <TextField
+            label="End Date"
+            type="date"
+            InputLabelProps={{ shrink: true }}
+            value={endDate}
+            onChange={(e) => setEndDate(e.target.value)}
+          />
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={handleSubmit}
+            sx={{ textTransform: 'none', fontWeight: 'bold' }}
+          >
+            Submit
+          </Button>
+        </Box>
+
+        <Divider sx={{ marginY: 2 }} />
+        <Typography variant="h6">Link report</Typography>
+        <TableContainer component={Paper}>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell>Id</TableCell>
+                <TableCell>Status</TableCell>
+                <TableCell>Action</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {jobData.map((job, index) => (
+                <TableRow key={index}>
+                  <TableCell>{index + 1}</TableCell>
+                  <TableCell>{job.status}</TableCell>
+                  <TableCell>
+                    {job.fileUrl ? (
+                      <Button
+                        variant="contained"
+                        color="primary"
+                        onClick={() => handleDownload(job.fileUrl)}
+                      >
+                        Download
+                      </Button>
+                    ) : (
+                      'N/A'
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
       </CardContent>
     </Card>
   );
