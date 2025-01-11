@@ -18,7 +18,7 @@ import {
   TableBody,
   IconButton,
 } from '@mui/material';
-const BACKEND_URL = `http://localhost:1997`;
+const BACKEND_URL = `http://103.162.21.218:5997`;
 import { getData, updateData } from './firebase';
 import ClearIcon from '@mui/icons-material/Clear';
 import RemoveCircleOutlineIcon from '@mui/icons-material/RemoveCircleOutline';

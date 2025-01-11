@@ -1,5 +1,5 @@
 const axios = require('axios');
-const SERVER_ENDPOINT = `http://localhost:1997`;
+const SERVER_ENDPOINT = `http://103.162.21.218:5997`;
 async function getCookiesShopee() {
   return new Promise((resolve, reject) => {
     let cookiesString = '';
