@@ -18,6 +18,7 @@ import {
   TableBody,
   IconButton,
 } from '@mui/material';
+const BACKEND_URL = `http://localhost:1997`;
 import { getData, updateData } from './firebase';
 import ClearIcon from '@mui/icons-material/Clear';
 import RemoveCircleOutlineIcon from '@mui/icons-material/RemoveCircleOutline';
@@ -49,14 +50,14 @@ const Popup = () => {
           fetchJobStatus(jobIds); // Gọi hàm để kiểm tra trạng thái của các jobIds
         }
       });
-    }, 1000); // 1000ms = 1 giây
+    }, 5000); // 1000ms = 1 giây
   }, []);
 
   const fetchJobStatus = async (jobIds) => {
     setIsFetchingJobs(true);
     try {
       const response = await fetch(
-        `http://localhost:1997/job-status?jobIds=${jobIds.join(',')}`
+        `${BACKEND_URL}/job-status?jobIds=${jobIds.join(',')}`
       );
       const data = await response.json();
       setJobData(data);
