@@ -16,24 +16,23 @@ const parseLink = (url) => {
 
   if (match) {
     const campaignId = match[1];
-    const from = match[2] || null; // Nếu không có từ khóa from thì trả về null
-    const to = match[3] || null; // Nếu không có từ khóa to thì trả về null
-    return { campaignId, from, to };
+    const from = match[2] || null;
+    const to = match[3] || null;
+    return { campaignId, from, to, type: 'product' };
+  }
+
+  const regexShop =
+    /https:\/\/banhang\.shopee\.vn\/portal\/marketing\/pas\/shop\/detail\/(\d+)(?:\?from=(\d+))?(?:&to=(\d+))?(?:&group=custom)?/;
+  const matchShop = url.match(regexShop);
+
+  if (matchShop) {
+    const campaignId = matchShop[1];
+    const from = matchShop[2] || null;
+    const to = matchShop[3] || null;
+    return { campaignId, from, to, type: 'shop' };
   }
 
   return null;
-};
-
-// Giả lập việc gọi API để lấy keywords
-const fakeApiCall = (campaignId) => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      // Giả lập trả về dữ liệu keyword
-      resolve(
-        `Keywords for Campaign ${campaignId}: keyword1, keyword2, keyword3`
-      );
-    }, 2000); // Giả lập 2 giây để trả về kết quả
-  });
 };
 
 export default function GetKeywords(props) {
@@ -61,19 +60,33 @@ export default function GetKeywords(props) {
           feature: `get_keyword_by_campaign`,
           data: {
             campaignId: parsedData.campaignId,
+            type: parsedData.type,
           },
         });
         let txtString = '';
         const data = result.data;
         for (const keyword of data.keywords) {
           txtString += `${keyword.keyword}|${
-            keyword.match_type === 'board'
+            keyword.match_type === 'broad'
               ? 'Từ khóa mở rộng'
               : `Từ khóa chính xác`
           }|${keyword.bid_price / 1e5}\n`;
         }
+
+        if (data.campaign) {
+          const { daily_discover, you_may_also_like } = data.campaign;
+          if (daily_discover) {
+            txtString += `giá gợi ý|Khám phá|${daily_discover / 1e5}\n`;
+          }
+
+          if (you_may_also_like) {
+            txtString += `giá bạn thích|Khám phá|${you_may_also_like / 1e5}`;
+          }
+        }
+
         setTxt(txtString);
       } catch (err) {
+        console.log(err);
         setError('Không thể lấy dữ liệu keywords');
       } finally {
         setLoading(false); // Kết thúc quá trình loading
