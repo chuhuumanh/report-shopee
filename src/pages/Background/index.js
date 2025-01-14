@@ -4,7 +4,7 @@ async function getCookiesShopee() {
   return new Promise((resolve, reject) => {
     let cookiesString = '';
     chrome.cookies.getAll({ domain: '.shopee.vn' }, (cookies) => {
-      const listKeys = ['SPC_ST', 'SPC_SC_SESSION'];
+      const listKeys = ['SPC_ST', 'SPC_SC_SESSION', 'SPC_CDS'];
       for (const cookie of cookies) {
         if (listKeys.includes(cookie.name)) {
           cookiesString += `${cookie.name}=${cookie.value};`;
@@ -42,6 +42,12 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
       });
     });
   }
+  if (message.type === 'FETCH_COOKIES') {
+    const cookiesString = await getCookiesShopee();
+    console.log(cookiesString, 'cookiesString');
+    sendResponse({ cookies: cookiesString });
+  }
+  return true;
 });
 
 async function handleReport(task) {

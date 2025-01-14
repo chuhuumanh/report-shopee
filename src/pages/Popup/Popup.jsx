@@ -1,5 +1,5 @@
 import './Popup.css';
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Typography,
   Card,
@@ -7,290 +7,210 @@ import {
   Divider,
   Avatar,
   Box,
-  TextField,
+  List,
+  ListItemButton,
+  ListItemIcon,
+  ListItemText,
   Button,
-  TableContainer,
-  Paper,
-  Table,
-  TableHead,
-  TableRow,
-  TableCell,
-  TableBody,
-  IconButton,
 } from '@mui/material';
-const BACKEND_URL = `http://103.162.21.218:5997`;
-import { getData, updateData } from './firebase';
-import ClearIcon from '@mui/icons-material/Clear';
-import RemoveCircleOutlineIcon from '@mui/icons-material/RemoveCircleOutline';
+import axios from 'axios';
+import QueryStatsIcon from '@mui/icons-material/QueryStats';
+import CampaignIcon from '@mui/icons-material/Campaign';
+import TrackChangesIcon from '@mui/icons-material/TrackChanges';
+import AdsClickIcon from '@mui/icons-material/AdsClick';
+import PersonSearchIcon from '@mui/icons-material/PersonSearch';
+import GetKeywords from './components/GetKeywords';
+import CreateCampaign from './components/CreateCampaign';
+import UpdateCampaign from './components/UpdateCampaign';
+import UpdateBatchCampaign from './components/UpdateBatchCampaign';
+import CreateReportMoney from './components/CreateReportMoney';
+const BACKEND_ENDPOINT = `http://localhost:1997`;
+
+const sideBarIcons = {
+  get_keyword_by_campaign: <QueryStatsIcon />,
+  create_campaign: <CampaignIcon />,
+  update_campaign: <TrackChangesIcon />,
+  update_batch_campaign: <AdsClickIcon />,
+  create_report_money: <PersonSearchIcon />,
+};
+
+const components = (slug, cookies) => {
+  const listComponent = {
+    get_keyword_by_campaign: <GetKeywords cookies={cookies} />,
+    create_campaign: <CreateCampaign cookies={cookies} />,
+    update_campaign: <UpdateCampaign cookies={cookies} />,
+    update_batch_campaign: <UpdateBatchCampaign cookies={cookies} />,
+    create_report_money: <CreateReportMoney cookies={cookies} />,
+  };
+
+  return listComponent[slug];
+};
+
+async function getCookiesShopee() {
+  return new Promise((resolve, reject) => {
+    let cookiesString = '';
+    chrome.cookies.getAll({ domain: '.shopee.vn' }, (cookies) => {
+      const listKeys = ['SPC_ST', 'SPC_SC_SESSION', 'SPC_CDS'];
+      for (const cookie of cookies) {
+        if (listKeys.includes(cookie.name)) {
+          cookiesString += `${cookie.name}=${cookie.value};`;
+        }
+      }
+      resolve(cookiesString);
+    });
+  });
+}
 
 const Popup = () => {
-  const [startDate, setStartDate] = useState('2024-12-01');
-  const [endDate, setEndDate] = useState('2024-12-31');
-  const [apiKey, setApiKey] = useState('');
-  const [isKeyActive, setIsKeyActive] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const [jobData, setJobData] = useState([]);
-  const [isFetchingJobs, setIsFetchingJobs] = useState(false);
+  const [features, setFeatures] = useState([]);
+  const [activeTab, setActiveTab] = useState(null);
+  const [key, setKey] = useState('CHUHUUMANH');
+  const [cookies, setCookies] = useState(null);
 
-  // Load API Key từ localStorage khi mở extension
-  useEffect(() => {
-    const storedKey = localStorage.getItem('apiKey');
-    if (storedKey) {
-      checkKeyOnGoogleSheets(storedKey, true);
-    } else {
-      setIsLoading(false);
-    }
-  }, []);
+  const fetchCookies = async () => {
+    const cookies = await getCookiesShopee();
+    setCookies(cookies);
+  };
 
   useEffect(() => {
-    setInterval(() => {
-      chrome.storage.local.get(['jobIds'], (result) => {
-        const jobIds = result.jobIds || [];
-        if (jobIds.length) {
-          fetchJobStatus(jobIds); // Gọi hàm để kiểm tra trạng thái của các jobIds
-        }
-      });
-    }, 5000); // 1000ms = 1 giây
+    fetchCookies();
   }, []);
 
-  const fetchJobStatus = async (jobIds) => {
-    setIsFetchingJobs(true);
-    try {
-      const response = await fetch(
-        `${BACKEND_URL}/job-status?jobIds=${jobIds.join(',')}`
+  const fetchFeatures = async () => {
+    if (key) {
+      const resFeature = await axios.get(
+        `${BACKEND_ENDPOINT}/features?key=${key}`
       );
-      const data = await response.json();
-      setJobData(data);
-    } catch (error) {
-      console.error('Lỗi khi lấy job status:', error);
-    } finally {
-      setIsFetchingJobs(false);
-    }
-  };
+      const data = resFeature.data;
+      const firstData = data[0];
 
-  const checkKeyOnGoogleSheets = async (key, isCheckExist) => {
-    try {
-      const listKeygen = await getData();
-      setIsLoading(true);
-      const keyCompare = listKeygen.find((item) => item?.key === key);
-
-      if (!keyCompare) {
-        alert('API Key không hợp lệ hoặc đã hết hạn!');
-        setIsKeyActive(false);
-        localStorage.removeItem('apiKey');
-        return;
+      if (firstData) {
+        setFeatures(data);
+        setActiveTab(firstData.slug);
       }
-
-      if (!isCheckExist) {
-        if (keyCompare.count < 1) {
-          alert('API Key không hợp lệ hoặc đã hết hạn!');
-          setIsKeyActive(false);
-          localStorage.removeItem('apiKey');
-          return;
-        }
-      }
-
-      if (!isCheckExist) {
-        await updateData(keyCompare.index, {
-          count: +keyCompare.count - 1,
-        });
-      }
-      setApiKey(key);
-      setIsKeyActive(true);
-    } catch (error) {
-      console.error('Lỗi khi kiểm tra API Key:', error);
-      alert('Không thể kiểm tra API Key. Vui lòng thử lại!');
-    } finally {
-      setIsLoading(false);
     }
   };
 
-  const handleActivateKey = () => {
-    if (apiKey.trim()) {
-      checkKeyOnGoogleSheets(apiKey);
-      localStorage.setItem('apiKey', apiKey);
-    } else {
-      alert('Vui lòng nhập API Key!');
-    }
-  };
+  useEffect(() => {
+    fetchFeatures();
+  }, [key]);
 
-  const handleSubmit = () => {
-    if (!isKeyActive) {
-      alert('API Key chưa được kích hoạt. Vui lòng nhập và kích hoạt API Key!');
-      return;
-    }
-
-    chrome.runtime.sendMessage({
-      type: 'EXPORT_REPORT',
-      url: 'https://banhang.shopee.vn/',
-      data: {
-        startDate,
-        endDate,
-      },
-    });
-  };
-
-  const handleDownload = (fileUrl) => {
-    if (fileUrl) {
-      const link = document.createElement('a');
-      link.href = fileUrl;
-      link.target = '_blank';
-      link.download = fileUrl.split('/').pop();
-      link.click();
-    }
-  };
-
-  const handleRemoveJobs = () => {
-    chrome.storage.local.remove(['jobIds'], () => {
-      setJobData([]); // Đặt lại danh sách report (nếu bạn sử dụng state jobData)
-    });
-  };
   return (
-    <Card sx={{ width: 800, minHeight: 700 }}>
-      <CardContent>
+    <Card
+      sx={{
+        width: 800,
+        minHeight: 700,
+        display: 'flex',
+        flexDirection: 'column',
+        borderRadius: '10px',
+        boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)', // Tạo hiệu ứng bóng nhẹ
+      }}
+    >
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          bgcolor: '#ffffff',
+        }}
+      >
         <Box
           sx={{
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'space-between',
             bgcolor: '#ffffff',
+            padding: 2,
           }}
         >
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <Avatar
-              alt="Company Logo"
-              src="./icon-128.png"
-              sx={{ width: 40, height: 40, marginRight: 1 }}
-            />
-            <Typography
-              variant="h6"
-              sx={{ fontWeight: 'bold', color: '#ee4d2d', marginRight: 1 }}
-            >
-              Nova
-            </Typography>
-            <Typography
-              variant="h5"
-              sx={{ color: '#ee4d2d', fontWeight: 'bold' }}
-            >
-              Checking
+          <Avatar
+            alt="Company Logo"
+            src="./icon-128.png"
+            sx={{ width: 40, height: 40, marginRight: 1 }}
+          />
+          <Typography
+            variant="h5"
+            sx={{ color: '#ee4d2d', fontWeight: 'bold' }}
+          >
+            Nova Tool Shopee
+          </Typography>
+        </Box>
+        <Box>
+          {!cookies && (
+            <>
+              <Box
+                sx={{
+                  backgroundColor: '#ee4d2d',
+                  color: '#fff',
+                  textTransform: 'none',
+                  fontWeight: 'bold',
+                  padding: '8px 16px',
+                }}
+              >
+                Bạn cần login ở shopee trước
+              </Box>
+            </>
+          )}
+        </Box>
+      </Box>
+
+      <Divider />
+
+      {/* Main content */}
+      <Box sx={{ display: 'flex', flex: 1 }}>
+        {/* Sidebar */}
+        <Box
+          sx={{
+            width: 250,
+            bgcolor: '#f0f4f7', // Màu nền nhẹ và thanh thoát
+            borderRight: '1px solid #ddd',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+          }}
+        >
+          {/* Features List */}
+          <List>
+            {(features || []).map((feature) => (
+              <ListItemButton
+                key={feature.id}
+                onClick={() => setActiveTab(feature.slug)}
+                sx={{
+                  bgcolor:
+                    activeTab === feature.slug ? '#ee4d2d' : 'transparent',
+                  color: activeTab === feature.slug ? '#ffffff' : '#333',
+                  '&:hover': { bgcolor: '#ffb2b2' }, // Màu nền hover nhẹ nhàng
+                  borderRadius: '10px',
+                  margin: '2px 10px',
+                  transition: 'all 0.3s ease', // Hiệu ứng chuyển màu mượt mà
+                }}
+              >
+                <ListItemIcon
+                  sx={{
+                    color: activeTab === feature.slug ? '#ffffff' : '#ee4d2d',
+                  }}
+                >
+                  {sideBarIcons[feature.slug]}
+                </ListItemIcon>
+                <ListItemText primary={feature.title} />
+              </ListItemButton>
+            ))}
+          </List>
+
+          {/* Footer */}
+          <Box sx={{ p: 2, textAlign: 'center' }}>
+            <Typography variant="body2" sx={{ color: '#999' }}>
+              © 2025 Nova Tool Shopee
             </Typography>
           </Box>
         </Box>
 
-        <Divider sx={{ marginY: 2 }} />
-
-        {!isKeyActive ? (
-          <Box>
-            <Typography variant="h6" sx={{ marginBottom: 2 }}>
-              Vui lòng nhập API Key để kích hoạt
-            </Typography>
-            <TextField
-              label="Nhập API Key"
-              fullWidth
-              variant="outlined"
-              value={apiKey}
-              onChange={(e) => setApiKey(e.target.value)}
-              sx={{ marginBottom: 2 }}
-            />
-            <Button
-              variant="contained"
-              color="primary"
-              onClick={handleActivateKey}
-              sx={{
-                textTransform: 'none',
-                fontWeight: 'bold',
-              }}
-            >
-              Kích hoạt
-            </Button>
-          </Box>
-        ) : (
-          <Box>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              <TextField
-                label="Start Date"
-                type="date"
-                InputLabelProps={{ shrink: true }}
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-              />
-              <TextField
-                label="End Date"
-                type="date"
-                InputLabelProps={{ shrink: true }}
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-              />
-              <Button
-                variant="contained"
-                color="primary"
-                onClick={handleSubmit}
-                sx={{ textTransform: 'none', fontWeight: 'bold' }}
-              >
-                Submit
-              </Button>
-            </Box>
-
-            <Divider sx={{ marginY: 2 }} />
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                marginBottom: '16px',
-              }}
-            >
-              <Typography variant="h6" style={{ flex: 1 }}>
-                Link report
-              </Typography>
-              <IconButton
-                color="error"
-                onClick={handleRemoveJobs}
-                aria-label="Reset reports"
-              >
-                <RemoveCircleOutlineIcon />
-              </IconButton>
-            </div>
-            <TableContainer component={Paper}>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Id</TableCell>
-                    <TableCell>Account</TableCell>
-                    <TableCell>Date Export</TableCell>
-                    <TableCell>Status</TableCell>
-                    <TableCell>Description</TableCell>
-                    <TableCell>Action</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {jobData.map((job, index) => (
-                    <TableRow key={index}>
-                      <TableCell>{index + 1}</TableCell>
-                      <TableCell>{job.account}</TableCell>
-                      <TableCell>{job.dateReport}</TableCell>
-                      <TableCell>{job.status}</TableCell>
-                      <TableCell>{job.description}</TableCell>
-                      <TableCell>
-                        {job.fileUrl ? (
-                          <Button
-                            variant="contained"
-                            color="primary"
-                            onClick={() => handleDownload(job.fileUrl)}
-                          >
-                            Download
-                          </Button>
-                        ) : (
-                          'N/A'
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          </Box>
-        )}
-      </CardContent>
+        {/* Content area */}
+        <Box sx={{ flex: 1, p: 3 }}>
+          {cookies && (
+            <CardContent>{components(activeTab, cookies)}</CardContent>
+          )}
+        </Box>
+      </Box>
     </Card>
   );
 };
