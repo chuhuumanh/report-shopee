@@ -6,6 +6,7 @@ import {
   Box,
   TextareaAutosize,
 } from '@mui/material';
+const { excute } = require('./../../../request');
 
 // Hàm để kiểm tra và parse URL
 const parseLink = (url) => {
@@ -40,7 +41,7 @@ export default function GetKeywords(props) {
   const [link, setLink] = useState('');
   const [error, setError] = useState('');
   const [data, setData] = useState(null);
-  const [keywords, setKeywords] = useState('');
+  const [txt, setTxt] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleLinkChange = (event) => {
@@ -55,8 +56,23 @@ export default function GetKeywords(props) {
       setLoading(true);
 
       try {
-        const result = await fakeApiCall(parsedData.campaignId);
-        setKeywords(result); // Cập nhật kết quả keywords
+        const result = await excute({
+          cookies,
+          feature: `get_keyword_by_campaign`,
+          data: {
+            campaignId: parsedData.campaignId,
+          },
+        });
+        let txtString = '';
+        const data = result.data;
+        for (const keyword of data.keywords) {
+          txtString += `${keyword.keyword}|${
+            keyword.match_type === 'board'
+              ? 'Từ khóa mở rộng'
+              : `Từ khóa chính xác`
+          }|${keyword.bid_price / 1e5}\n`;
+        }
+        setTxt(txtString);
       } catch (err) {
         setError('Không thể lấy dữ liệu keywords');
       } finally {
@@ -97,14 +113,14 @@ export default function GetKeywords(props) {
       </Button>
 
       {/* Display Keywords Textarea */}
-      {keywords && (
+      {txt && (
         <Box>
           <Typography variant="body1" color="blue" sx={{ marginBottom: 2 }}>
-            <strong>Keywords:</strong>
+            <strong>Content:</strong>
           </Typography>
           <TextareaAutosize
             minRows={4}
-            value={keywords}
+            value={txt}
             readOnly
             style={{
               width: '100%',
