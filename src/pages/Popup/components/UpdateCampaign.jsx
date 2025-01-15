@@ -16,11 +16,26 @@ import {
   RadioGroup,
   FormControlLabel,
 } from '@mui/material';
+import { excute } from '../../../request';
 
-export default function UpdateCampaign() {
-  const [campaignLink, setCampaignLink] = useState(
-    'https://banhang.shopee.vn/portal/marketing/pas/product/manual/154418189?from=1735660800&to=1736870399&group=custom'
-  );
+const parseLink = (url) => {
+  const regex =
+    /https:\/\/banhang\.shopee\.vn\/portal\/marketing\/pas\/product\/manual\/(\d+)(?:\?from=(\d+))?(?:&to=(\d+))?(?:&group=custom)?/;
+  const match = url.match(regex);
+
+  if (match) {
+    const campaignId = match[1];
+    const from = match[2] || null;
+    const to = match[3] || null;
+    return { campaignId, from, to, type: 'product' };
+  }
+
+  return null;
+};
+
+export default function UpdateCampaign(props) {
+  const { cookies } = props;
+  const [campaignLink, setCampaignLink] = useState('');
   const [criteria, setCriteria] = useState(''); // Lưu giá trị cho dropdown COST/ACOS
   const [value, setValue] = useState(''); // Lưu giá trị cho input nhập
   const [selectedOperator, setSelectedOperator] = useState('');
@@ -29,10 +44,17 @@ export default function UpdateCampaign() {
   const [adjustmentValue, setAdjustmentValue] = useState(''); // Lưu giá trị điều chỉnh
   const [errors, setErrors] = useState({});
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const validationErrors = {};
     if (!campaignLink) {
       validationErrors.campaignLink = 'Vui lòng nhập link campaign';
+    }
+
+    if (campaignLink) {
+      const dataParse = parseLink(campaignLink);
+      if (!dataParse) {
+        validationErrors.campaignLink = 'Vui lòng nhập link campaign';
+      }
     }
     if (!value) {
       validationErrors.value = 'Vui lòng nhập giá trị';
@@ -58,18 +80,34 @@ export default function UpdateCampaign() {
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
     } else {
-      alert(
-        'Dữ liệu hợp lệ: ' +
-          JSON.stringify({
-            campaignLink,
-            criteria,
-            value,
-            selectedOperator,
-            adjustmentOption,
-            adjustmentCondition,
-            adjustmentValue,
-          })
-      );
+      const dataParse = parseLink(campaignLink);
+
+      const dataSend = {
+        campaign_id: +dataParse.campaignId,
+        query_keywords: {
+          column: criteria === 'acos' ? 'broad_cir' : 'cost',
+          value: +value,
+          operator: selectedOperator,
+        },
+        change: {
+          type: adjustmentOption,
+          value: +adjustmentValue,
+          adjustment: adjustmentCondition,
+        },
+      };
+
+      try {
+        await excute({
+          cookies,
+          feature: `update_campaign`,
+          data: dataSend,
+        });
+
+        alert('Lệnh thành công');
+      } catch (error) {
+        alert('Lệnh thất bại');
+      }
+
       setErrors({});
     }
   };
@@ -104,7 +142,7 @@ export default function UpdateCampaign() {
               <Autocomplete
                 value={criteria}
                 onChange={(event, newValue) => setCriteria(newValue)} // Chỉ cập nhật criteria khi chọn
-                options={['ADS', 'ACOS']}
+                options={['ads', 'acos']}
                 renderInput={(params) => (
                   <TextField
                     {...params}

@@ -16,8 +16,10 @@ import {
   RadioGroup,
   FormControlLabel,
 } from '@mui/material';
+import { excute } from '../../../request';
 
-export default function UpdateBatchCampaign() {
+export default function UpdateBatchCampaign(props) {
+  const { cookies } = props;
   const [criteria, setCriteria] = useState(''); // Lưu giá trị cho dropdown COST/ACOS
   const [value, setValue] = useState(''); // Lưu giá trị cho input nhập
   const [selectedOperator, setSelectedOperator] = useState('');
@@ -26,7 +28,7 @@ export default function UpdateBatchCampaign() {
   const [adjustmentValue, setAdjustmentValue] = useState(''); // Lưu giá trị điều chỉnh
   const [errors, setErrors] = useState({});
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const validationErrors = {};
     if (!value) {
       validationErrors.value = 'Vui lòng nhập giá trị';
@@ -52,18 +54,30 @@ export default function UpdateBatchCampaign() {
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
     } else {
-      alert(
-        'Dữ liệu hợp lệ: ' +
-          JSON.stringify({
-            campaignLink,
-            criteria,
-            value,
-            selectedOperator,
-            adjustmentOption,
-            adjustmentCondition,
-            adjustmentValue,
-          })
-      );
+      const dataSend = {
+        query_keywords: {
+          column: criteria === 'acos' ? 'broad_cir' : 'cost',
+          value: +value,
+          operator: selectedOperator,
+        },
+        change: {
+          type: adjustmentOption,
+          value: +adjustmentValue,
+          adjustment: adjustmentCondition,
+        },
+      };
+      try {
+        await excute({
+          cookies,
+          feature: `update_batch_campaign`,
+          data: dataSend,
+        });
+
+        alert('Tạo lệnh thành công !');
+      } catch (error) {
+        alert('Lệnh thất bại');
+      }
+
       setErrors({});
     }
   };
@@ -71,6 +85,7 @@ export default function UpdateBatchCampaign() {
   return (
     <Box>
       <Stack spacing={2}>
+        {/* Section: Quét Keywords theo Điều kiện */}
         <Box sx={{ mt: 4 }}>
           <Typography variant="h6" gutterBottom>
             Quét Keywords theo Điều kiện
@@ -82,7 +97,7 @@ export default function UpdateBatchCampaign() {
               <Autocomplete
                 value={criteria}
                 onChange={(event, newValue) => setCriteria(newValue)} // Chỉ cập nhật criteria khi chọn
-                options={['ADS', 'ACOS']}
+                options={['ads', 'acos']}
                 renderInput={(params) => (
                   <TextField
                     {...params}

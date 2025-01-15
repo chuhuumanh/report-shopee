@@ -31,12 +31,19 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
       cookiesString: cookiesString,
     });
 
-    // Lấy jobIds hiện tại từ chrome.storage
     chrome.storage.local.get(['jobIds'], (result) => {
       let jobIds = result.jobIds || []; // Nếu chưa có thì khởi tạo là mảng rỗng
       jobIds.push(resExport.jobId); // Thêm jobId mới vào mảng
+      chrome.storage.local.set({ jobIds: jobIds }, () => {
+        console.log('Updated jobIds:', jobIds);
+      });
+    });
+  }
 
-      // Lưu lại mảng jobIds vào chrome.storage
+  if (message.type === 'ADD_JOB') {
+    chrome.storage.local.get(['jobIds'], (result) => {
+      let jobIds = result.jobIds || [];
+      jobIds.push(message.data.jobId);
       chrome.storage.local.set({ jobIds: jobIds }, () => {
         console.log('Updated jobIds:', jobIds);
       });
