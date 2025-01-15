@@ -66,21 +66,21 @@ export default function GetKeywords(props) {
         let txtString = '';
         const data = result.data;
         for (const keyword of data.keywords) {
-          txtString += `${keyword.keyword}|${
-            keyword.match_type === 'broad'
-              ? 'Từ khóa mở rộng'
-              : `Từ khóa chính xác`
-          }|${keyword.bid_price / 1e5}\n`;
+          txtString += `${keyword.keyword}|${keyword.match_type}|${
+            keyword.bid_price / 1e5
+          }\n`;
         }
 
         if (data.campaign) {
           const { daily_discover, you_may_also_like } = data.campaign;
           if (daily_discover) {
-            txtString += `giá gợi ý|Khám phá|${daily_discover / 1e5}\n`;
+            txtString += `daily_discover|discovery|${daily_discover / 1e5}\n`;
           }
 
           if (you_may_also_like) {
-            txtString += `giá bạn thích|Khám phá|${you_may_also_like / 1e5}`;
+            txtString += `you_may_also_like|discovery|${
+              you_may_also_like / 1e5
+            }`;
           }
         }
 

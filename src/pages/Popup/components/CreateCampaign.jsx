@@ -11,37 +11,34 @@ import {
   FormControlLabel,
   Radio,
   Button,
+  TextareaAutosize,
 } from '@mui/material';
 import { ShoppingCart, Store } from '@mui/icons-material';
+import { excute } from '../../../request';
 
-export default function CreateCampaign() {
+export default function CreateCampaign(props) {
+  const { cookies } = props;
   const [activeTab, setActiveTab] = useState('product');
-  const [biddingType, setBiddingType] = useState('');
-  const [roasType, setRoasType] = useState('system');
-  const [customRoas, setCustomRoas] = useState('');
-  const [productLink, setProductLink] = useState('');
-  const [keywords, setKeywords] = useState('');
+  const [txt, setTxt] = useState('');
   const [errors, setErrors] = useState({});
-  const [adName, setAdName] = useState(''); // New state for ad name in Shop tab
 
   // Data objects for product and shop
   const [productData, setProductData] = useState({
-    productLink: '',
-    biddingType: '',
+    productLink: 'https://banhang.shopee.vn/portal/product/28222878273',
+    bidding_strategy: '',
     roasType: 'system',
-    customRoas: '',
+    roi_two_target: '',
     keywords: '',
   });
 
   const [shopData, setShopData] = useState({
     adName: '',
-    biddingType: '',
+    bidding_strategy: '',
     keywords: '',
   });
 
   const handleTabChange = (event, newValue) => {
     setActiveTab(newValue);
-    setBiddingType('');
     setErrors({});
   };
 
@@ -53,23 +50,34 @@ export default function CreateCampaign() {
       // Validate sản phẩm
       if (!productData.productLink.trim()) {
         validationErrors.productLink = 'Vui lòng nhập link sản phẩm.';
+      } else {
+        const shopeeProductRegex =
+          /https?:\/\/banhang\.shopee\.vn\/portal\/product\/(\d+)/;
+        const match = productData.productLink.match(shopeeProductRegex);
+
+        if (!match) {
+          validationErrors.productLink = 'Link sản phẩm không hợp lệ.';
+        } else {
+          const productId = match[1];
+          console.log('Extracted product ID:', productId);
+        }
       }
 
       // Validate đặt giá thầu
-      if (!productData.biddingType) {
-        validationErrors.biddingType = 'Vui lòng chọn loại giá thầu.';
+      if (!productData.bidding_strategy) {
+        validationErrors.bidding_strategy = 'Vui lòng chọn loại giá thầu.';
       }
 
       if (
-        productData.biddingType === 'auto' &&
+        productData.bidding_strategy === 'roi_two' &&
         productData.roasType === 'custom' &&
-        !productData.customRoas
+        !productData.roi_two_target
       ) {
-        validationErrors.customRoas = 'Vui lòng nhập ROAS tùy chỉnh.';
+        validationErrors.roi_two_target = 'Vui lòng nhập ROAS tùy chỉnh.';
       }
 
       if (
-        productData.biddingType === 'manual' &&
+        productData.bidding_strategy === 'manual' &&
         !productData.keywords.trim()
       ) {
         validationErrors.keywords = 'Vui lòng nhập danh sách từ khóa.';
@@ -90,12 +98,12 @@ export default function CreateCampaign() {
       }
 
       // Validate đặt giá thầu
-      if (!shopData.biddingType) {
-        validationErrors.biddingType = 'Vui lòng chọn loại giá thầu.';
+      if (!shopData.bidding_strategy) {
+        validationErrors.bidding_strategy = 'Vui lòng chọn loại giá thầu.';
       }
 
       // Validate giá thầu thủ công
-      if (shopData.biddingType === 'manual' && !shopData.keywords.trim()) {
+      if (shopData.bidding_strategy === 'manual' && !shopData.keywords.trim()) {
         validationErrors.keywords = 'Vui lòng nhập danh sách từ khóa.';
       }
     }
@@ -103,7 +111,27 @@ export default function CreateCampaign() {
     return validationErrors;
   };
 
-  const handleSubmit = () => {
+  const getProductIdFromLink = (productLink) => {
+    const shopeeProductRegex =
+      /https?:\/\/banhang\.shopee\.vn\/portal\/product\/(\d+)/;
+    const match = productLink.match(shopeeProductRegex);
+    return match ? match[1] : null;
+  };
+
+  const convertToKeywordArray = (dataString) => {
+    return dataString
+      .split('\n')
+      .filter((line) => line.trim() !== '')
+      .map((line) => {
+        const [keyword, matchType, bidPrice] = line.split('|');
+        return {
+          keyword: keyword?.trim(),
+          bid_price: parseFloat(bidPrice?.trim()) || 0,
+          match_type: matchType?.trim(),
+        };
+      });
+  };
+  const handleSubmit = async () => {
     let validationErrors = {};
 
     if (activeTab === 'product') {
@@ -115,14 +143,97 @@ export default function CreateCampaign() {
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
     } else {
-      // Show alert with data for both product and shop
-      if (activeTab === 'product') alert(JSON.stringify(productData));
-      else alert(JSON.stringify(productData));
+      if (activeTab === 'product') {
+        const isManual =
+          productData.bidding_strategy === 'manual' ? true : false;
+        const dataSend = {
+          item_id: +getProductIdFromLink(productData.productLink),
+          type: 'product',
+          bidding_strategy: productData.bidding_strategy,
+        };
 
-      console.log({
-        productData,
-        shopData,
-      });
+        if (isManual) {
+          const txtKeywords = productData.keywords;
+          const arrKeywords = convertToKeywordArray(txtKeywords);
+          dataSend.keywords = arrKeywords.filter(
+            (item) => item.match_type !== 'discovery'
+          );
+          const daily_discover = arrKeywords.find(
+            (item) => item.keyword === 'daily_discover'
+          );
+          const you_may_also_like = arrKeywords.find(
+            (item) => item.keyword === 'you_may_also_like'
+          );
+
+          if (daily_discover || you_may_also_like) {
+            const location = {};
+
+            if (daily_discover) {
+              location.daily_discover = {
+                state: 'active',
+                bid_price: daily_discover.bid_price,
+              };
+            }
+
+            if (you_may_also_like) {
+              location.you_may_also_like = {
+                state: 'active',
+                bid_price: you_may_also_like.bid_price,
+              };
+            }
+
+            dataSend.display_location = location;
+          }
+        } else {
+          dataSend.roi_two_target = +productData.roi_two_target || 0;
+        }
+
+        try {
+          const response = await excute({
+            cookies,
+            feature: `create_campaign`,
+            data: dataSend,
+          });
+          if (response.success) {
+            const campaign_id = response.data.campaignId;
+            const url =
+              activeTab === 'product'
+                ? `https://banhang.shopee.vn/portal/marketing/pas/product/manual/${campaign_id}`
+                : `https://banhang.shopee.vn/portal/marketing/pas/shop/detail/${campaign_id}`;
+
+            setTxt(url);
+          }
+        } catch (error) {
+          alert(`Lỗi khi tạo campaign vui lòng kiểm tra lại link !`);
+        }
+      } else {
+        const isManual = shopData.bidding_strategy === 'manual' ? true : false;
+        const dataSend = {
+          type: 'shop',
+          bidding_strategy: shopData.bidding_strategy,
+          name: shopData.adName,
+        };
+
+        if (isManual) {
+          const arrKeywords = convertToKeywordArray(shopData.keywords);
+          dataSend.keywords = arrKeywords;
+        }
+
+        try {
+          const response = await excute({
+            cookies,
+            feature: `create_campaign`,
+            data: dataSend,
+          });
+          if (response.success) {
+            const campaign_id = response.data.campaignId;
+            const url = `https://banhang.shopee.vn/portal/marketing/pas/shop/detail/${campaign_id}`;
+            setTxt(url);
+          }
+        } catch (error) {
+          alert(`Lỗi khi tạo campaign, vui lòng kiểm tra lại data`);
+        }
+      }
       setErrors({});
     }
   };
@@ -184,13 +295,13 @@ export default function CreateCampaign() {
               sx={{
                 flex: 1,
                 border:
-                  productData.biddingType === 'auto'
+                  productData.bidding_strategy === 'roi_two'
                     ? `2px solid #ee4d2d`
                     : '1px solid #ccc',
                 cursor: 'pointer',
               }}
               onClick={() =>
-                setProductData({ ...productData, biddingType: 'auto' })
+                setProductData({ ...productData, bidding_strategy: 'roi_two' })
               }
             >
               <CardContent>
@@ -208,13 +319,13 @@ export default function CreateCampaign() {
               sx={{
                 flex: 1,
                 border:
-                  productData.biddingType === 'manual'
+                  productData.bidding_strategy === 'manual'
                     ? `2px solid #ee4d2d`
                     : '1px solid #ccc',
                 cursor: 'pointer',
               }}
               onClick={() =>
-                setProductData({ ...productData, biddingType: 'manual' })
+                setProductData({ ...productData, bidding_strategy: 'manual' })
               }
             >
               <CardContent>
@@ -227,14 +338,14 @@ export default function CreateCampaign() {
               </CardContent>
             </Card>
           </Box>
-          {errors.biddingType && (
+          {errors.bidding_strategy && (
             <Typography color="error" sx={{ mt: 1 }}>
-              {errors.biddingType}
+              {errors.bidding_strategy}
             </Typography>
           )}
 
           {/* Hiển thị nội dung tương ứng với lựa chọn */}
-          {productData.biddingType === 'auto' && (
+          {productData.bidding_strategy === 'roi_two' && (
             <Box sx={{ mt: 2 }}>
               <RadioGroup
                 value={productData.roasType}
@@ -255,7 +366,7 @@ export default function CreateCampaign() {
                   label="Tối đa doanh thu tối ưu ROAS hệ thống"
                 />
                 <FormControlLabel
-                  value="custom"
+                  value="roi_two"
                   control={
                     <Radio
                       sx={{
@@ -267,27 +378,27 @@ export default function CreateCampaign() {
                   label="Tối đa doanh thu tùy chỉnh ROAS"
                 />
               </RadioGroup>
-              {productData.roasType === 'custom' && (
+              {productData.roasType === 'roi_two' && (
                 <TextField
                   type="number"
                   label="Nhập ROAS tùy chỉnh"
                   variant="outlined"
-                  value={productData.customRoas}
+                  value={productData.roi_two_target}
                   onChange={(e) =>
                     setProductData({
                       ...productData,
-                      customRoas: e.target.value,
+                      roi_two_target: e.target.value,
                     })
                   }
-                  error={!!errors.customRoas}
-                  helperText={errors.customRoas}
+                  error={!!errors.roi_two_target}
+                  helperText={errors.roi_two_target}
                   sx={{ mt: 1 }}
                 />
               )}
             </Box>
           )}
 
-          {productData.biddingType === 'manual' && (
+          {productData.bidding_strategy === 'manual' && (
             <TextField
               fullWidth
               multiline
@@ -336,12 +447,14 @@ export default function CreateCampaign() {
               sx={{
                 flex: 1,
                 border:
-                  shopData.biddingType === 'auto'
+                  shopData.bidding_strategy === 'roi_two'
                     ? `2px solid #ee4d2d`
                     : '1px solid #ccc',
                 cursor: 'pointer',
               }}
-              onClick={() => setShopData({ ...shopData, biddingType: 'auto' })}
+              onClick={() =>
+                setShopData({ ...shopData, bidding_strategy: 'roi_two' })
+              }
             >
               <CardContent>
                 <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
@@ -358,13 +471,13 @@ export default function CreateCampaign() {
               sx={{
                 flex: 1,
                 border:
-                  shopData.biddingType === 'manual'
+                  shopData.bidding_strategy === 'manual'
                     ? `2px solid #ee4d2d`
                     : '1px solid #ccc',
                 cursor: 'pointer',
               }}
               onClick={() =>
-                setShopData({ ...shopData, biddingType: 'manual' })
+                setShopData({ ...shopData, bidding_strategy: 'manual' })
               }
             >
               <CardContent>
@@ -379,13 +492,13 @@ export default function CreateCampaign() {
           </Box>
 
           {/* Hiển thị lỗi nếu có */}
-          {errors.biddingType && (
+          {errors.bidding_strategy && (
             <Typography color="error" sx={{ mt: 1 }}>
-              {errors.biddingType}
+              {errors.bidding_strategy}
             </Typography>
           )}
 
-          {shopData.biddingType === 'manual' && (
+          {shopData.bidding_strategy === 'manual' && (
             <TextField
               fullWidth
               multiline
@@ -417,6 +530,26 @@ export default function CreateCampaign() {
           Submit
         </Button>
       </Box>
+
+      {txt && (
+        <Box>
+          <Typography variant="body1" color="blue" sx={{ marginBottom: 2 }}>
+            <strong>Content:</strong>
+          </Typography>
+          <TextareaAutosize
+            minRows={4}
+            value={txt}
+            readOnly
+            style={{
+              width: '100%',
+              padding: '10px',
+              fontSize: '14px',
+              borderColor: '#ddd',
+              borderRadius: '5px',
+            }}
+          />
+        </Box>
+      )}
     </Box>
   );
 }

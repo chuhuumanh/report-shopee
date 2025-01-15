@@ -18,7 +18,9 @@ import {
 } from '@mui/material';
 
 export default function UpdateCampaign() {
-  const [campaignLink, setCampaignLink] = useState('');
+  const [campaignLink, setCampaignLink] = useState(
+    'https://banhang.shopee.vn/portal/marketing/pas/product/manual/154418189?from=1735660800&to=1736870399&group=custom'
+  );
   const [criteria, setCriteria] = useState(''); // Lưu giá trị cho dropdown COST/ACOS
   const [value, setValue] = useState(''); // Lưu giá trị cho input nhập
   const [selectedOperator, setSelectedOperator] = useState('');

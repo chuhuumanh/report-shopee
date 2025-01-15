@@ -99,7 +99,7 @@ const Popup = () => {
     <Card
       sx={{
         width: 800,
-        minHeight: 700,
+        minHeight: 900,
         display: 'flex',
         flexDirection: 'column',
         borderRadius: '10px',
