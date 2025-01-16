@@ -26,7 +26,7 @@ import UpdateCampaign from './components/UpdateCampaign';
 import UpdateBatchCampaign from './components/UpdateBatchCampaign';
 import CreateReportMoney from './components/CreateReportMoney';
 import { get } from '../../request';
-const BACKEND_ENDPOINT = `http://localhost:5997`;
+const BACKEND_ENDPOINT = `http://103.162.21.218:5997`;
 
 const sideBarIcons = {
   get_keyword_by_campaign: <QueryStatsIcon />,

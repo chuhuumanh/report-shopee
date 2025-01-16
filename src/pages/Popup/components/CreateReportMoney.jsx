@@ -37,7 +37,7 @@ export default function CreateReportMoney(props) {
           setJobs(response.data);
         }
       });
-    }, 2000);
+    }, 1000);
     return () => {
       clearInterval(intervalId);
     };
