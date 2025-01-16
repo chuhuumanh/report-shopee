@@ -19,7 +19,7 @@ import {
 import { excute } from '../../../request';
 
 export default function UpdateBatchCampaign(props) {
-  const { cookies } = props;
+  const { cookies, apiKey } = props;
   const [criteria, setCriteria] = useState(''); // Lưu giá trị cho dropdown COST/ACOS
   const [value, setValue] = useState(''); // Lưu giá trị cho input nhập
   const [selectedOperator, setSelectedOperator] = useState('');
@@ -68,6 +68,7 @@ export default function UpdateBatchCampaign(props) {
       };
       try {
         await excute({
+          apiKey,
           cookies,
           feature: `update_batch_campaign`,
           data: dataSend,

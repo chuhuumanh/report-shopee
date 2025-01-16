@@ -17,7 +17,7 @@ import { ShoppingCart, Store } from '@mui/icons-material';
 import { excute } from '../../../request';
 
 export default function CreateCampaign(props) {
-  const { cookies } = props;
+  const { cookies, apiKey } = props;
   const [activeTab, setActiveTab] = useState('product');
   const [txt, setTxt] = useState('');
   const [errors, setErrors] = useState({});
@@ -190,6 +190,7 @@ export default function CreateCampaign(props) {
 
         try {
           const response = await excute({
+            apiKey,
             cookies,
             feature: `create_campaign`,
             data: dataSend,
@@ -221,6 +222,7 @@ export default function CreateCampaign(props) {
 
         try {
           const response = await excute({
+            apiKey,
             cookies,
             feature: `create_campaign`,
             data: dataSend,

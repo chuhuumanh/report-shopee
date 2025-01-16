@@ -12,6 +12,7 @@ import {
   ListItemIcon,
   ListItemText,
   Button,
+  TextField,
 } from '@mui/material';
 import axios from 'axios';
 import QueryStatsIcon from '@mui/icons-material/QueryStats';
@@ -24,7 +25,8 @@ import CreateCampaign from './components/CreateCampaign';
 import UpdateCampaign from './components/UpdateCampaign';
 import UpdateBatchCampaign from './components/UpdateBatchCampaign';
 import CreateReportMoney from './components/CreateReportMoney';
-const BACKEND_ENDPOINT = `http://localhost:1997`;
+import { get } from '../../request';
+const BACKEND_ENDPOINT = `http://localhost:5997`;
 
 const sideBarIcons = {
   get_keyword_by_campaign: <QueryStatsIcon />,
@@ -34,13 +36,15 @@ const sideBarIcons = {
   create_report_money: <PersonSearchIcon />,
 };
 
-const components = (slug, cookies) => {
+const components = (slug, key, cookies) => {
   const listComponent = {
-    get_keyword_by_campaign: <GetKeywords cookies={cookies} />,
-    create_campaign: <CreateCampaign cookies={cookies} />,
-    update_campaign: <UpdateCampaign cookies={cookies} />,
-    update_batch_campaign: <UpdateBatchCampaign cookies={cookies} />,
-    create_report_money: <CreateReportMoney cookies={cookies} />,
+    get_keyword_by_campaign: <GetKeywords apiKey={key} cookies={cookies} />,
+    create_campaign: <CreateCampaign apiKey={key} cookies={cookies} />,
+    update_campaign: <UpdateCampaign apiKey={key} cookies={cookies} />,
+    update_batch_campaign: (
+      <UpdateBatchCampaign apiKey={key} cookies={cookies} />
+    ),
+    create_report_money: <CreateReportMoney apiKey={key} cookies={cookies} />,
   };
 
   return listComponent[slug];
@@ -64,7 +68,8 @@ async function getCookiesShopee() {
 const Popup = () => {
   const [features, setFeatures] = useState([]);
   const [activeTab, setActiveTab] = useState(null);
-  const [key, setKey] = useState('CHUHUUMANH');
+  const [apiKey, setApiKey] = useState('');
+  const [isKeyActive, setIsKeyActive] = useState(false);
   const [cookies, setCookies] = useState(null);
 
   const fetchCookies = async () => {
@@ -73,27 +78,72 @@ const Popup = () => {
   };
 
   useEffect(() => {
+    chrome.storage.local.get(['apiKey'], (result) => {
+      if (result.apiKey) {
+        setApiKey(result.apiKey);
+        setIsKeyActive(true);
+      }
+    });
+  }, []);
+
+  useEffect(() => {
     fetchCookies();
   }, []);
 
-  const fetchFeatures = async () => {
-    if (key) {
-      const resFeature = await axios.get(
-        `${BACKEND_ENDPOINT}/features?key=${key}`
-      );
-      const data = resFeature.data;
-      const firstData = data[0];
+  const checkKeyOnGoogleSheets = async (key, isCheckExist) => {
+    try {
+      let pathKey = `/verify-keygen?key=${key}`;
+      if (isCheckExist) pathKey += `&isExist=true`;
+      await get(pathKey);
+      setApiKey(key);
+      setIsKeyActive(true);
+      chrome.storage.local.set({ apiKey: key });
+    } catch (error) {
+      // Xóa key khỏi chrome.storage.local khi không hợp lệ
+      chrome.storage.local.remove(['apiKey'], () => {
+        console.log('Invalid API Key removed from storage');
+      });
+    }
+  };
 
-      if (firstData) {
-        setFeatures(data);
-        setActiveTab(firstData.slug);
+  // Hàm kích hoạt API Key
+  const handleActivateKey = () => {
+    if (apiKey.trim()) {
+      checkKeyOnGoogleSheets(apiKey);
+      // Lưu key vào chrome.storage.local
+      chrome.storage.local.set({ apiKey: apiKey }, () => {
+        console.log('API Key saved to chrome.storage.local');
+      });
+    } else {
+      alert('Vui lòng nhập API Key!');
+    }
+  };
+
+  const fetchFeatures = async () => {
+    try {
+      if (apiKey) {
+        const resFeature = await axios.get(
+          `${BACKEND_ENDPOINT}/features?key=${apiKey}`
+        );
+        const data = resFeature.data;
+        const firstData = data[0];
+
+        if (firstData) {
+          setFeatures(data);
+          setActiveTab(firstData.slug);
+        }
       }
+    } catch (error) {
+      setApiKey('');
+      setIsKeyActive('');
     }
   };
 
   useEffect(() => {
-    fetchFeatures();
-  }, [key]);
+    if (isKeyActive) {
+      fetchFeatures();
+    }
+  }, [isKeyActive]);
 
   return (
     <Card
@@ -204,10 +254,41 @@ const Popup = () => {
           </Box>
         </Box>
 
-        {/* Content area */}
         <Box sx={{ flex: 1, p: 3 }}>
-          {cookies && (
-            <CardContent>{components(activeTab, cookies)}</CardContent>
+          {!isKeyActive ? (
+            <Box>
+              <Typography variant="h6" sx={{ marginBottom: 2 }}>
+                Vui lòng nhập API Key để kích hoạt
+              </Typography>
+              <TextField
+                label="Nhập API Key"
+                fullWidth
+                variant="outlined"
+                value={apiKey}
+                onChange={(e) => setApiKey(e.target.value)}
+                sx={{ marginBottom: 2 }}
+              />
+              <Button
+                variant="contained"
+                color="primary"
+                onClick={handleActivateKey}
+                sx={{
+                  textTransform: 'none',
+                  fontWeight: 'bold',
+                }}
+              >
+                Kích hoạt
+              </Button>
+            </Box>
+          ) : (
+            <>
+              {' '}
+              {cookies && (
+                <CardContent>
+                  {components(activeTab, apiKey, cookies)}
+                </CardContent>
+              )}
+            </>
           )}
         </Box>
       </Box>

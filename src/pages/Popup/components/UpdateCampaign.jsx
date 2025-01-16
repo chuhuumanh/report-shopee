@@ -34,7 +34,7 @@ const parseLink = (url) => {
 };
 
 export default function UpdateCampaign(props) {
-  const { cookies } = props;
+  const { cookies, apiKey } = props;
   const [campaignLink, setCampaignLink] = useState('');
   const [criteria, setCriteria] = useState(''); // Lưu giá trị cho dropdown COST/ACOS
   const [value, setValue] = useState(''); // Lưu giá trị cho input nhập
@@ -98,6 +98,7 @@ export default function UpdateCampaign(props) {
 
       try {
         await excute({
+          apiKey,
           cookies,
           feature: `update_campaign`,
           data: dataSend,

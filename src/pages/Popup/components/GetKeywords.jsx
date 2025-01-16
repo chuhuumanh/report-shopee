@@ -36,7 +36,7 @@ const parseLink = (url) => {
 };
 
 export default function GetKeywords(props) {
-  const { cookies } = props;
+  const { cookies, apiKey } = props;
   const [link, setLink] = useState('');
   const [error, setError] = useState('');
   const [data, setData] = useState(null);
@@ -56,6 +56,7 @@ export default function GetKeywords(props) {
 
       try {
         const result = await excute({
+          apiKey,
           cookies,
           feature: `get_keyword_by_campaign`,
           data: {

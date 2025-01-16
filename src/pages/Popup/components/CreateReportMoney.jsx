@@ -20,7 +20,7 @@ import DeleteSweepIcon from '@mui/icons-material/DeleteSweep';
 import { excute, get } from '../../../request';
 
 export default function CreateReportMoney(props) {
-  const { cookies } = props;
+  const { cookies, apiKey } = props;
   const [startDate, setStartDate] = useState('2024-11-11');
   const [endDate, setEndDate] = useState('2024-12-12');
   const [errors, setErrors] = useState({});
@@ -60,6 +60,7 @@ export default function CreateReportMoney(props) {
     } else {
       try {
         const response = await excute({
+          apiKey,
           cookies,
           feature: `create_report_money`,
           data: {
