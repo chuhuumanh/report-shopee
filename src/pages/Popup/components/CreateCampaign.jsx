@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Box,
   Tabs,
@@ -24,12 +24,27 @@ export default function CreateCampaign(props) {
 
   // Data objects for product and shop
   const [productData, setProductData] = useState({
-    productLink: 'https://banhang.shopee.vn/portal/product/28222878273',
+    productLink: '',
     bidding_strategy: '',
     roasType: 'system',
     roi_two_target: '',
     keywords: '',
   });
+
+  useEffect(() => {
+    // Get the current tab URL using chrome.tabs.query
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      const url = tabs[0]?.url;
+
+      if (url) {
+        const shopeeProductRegex =
+          /https?:\/\/banhang\.shopee\.vn\/portal\/product\/(\d+)/;
+        const match = url.match(shopeeProductRegex);
+
+        if (match) setProductData({ ...productData, productLink: url });
+      }
+    });
+  }, []);
 
   const [shopData, setShopData] = useState({
     adName: '',

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   TextField,
   Button,
@@ -46,6 +46,18 @@ export default function GetKeywords(props) {
   const handleLinkChange = (event) => {
     setLink(event.target.value);
   };
+
+  useEffect(() => {
+    // Get the current tab URL using chrome.tabs.query
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      const url = tabs[0]?.url;
+
+      if (url) {
+        const parsedLink = parseLink(url);
+        setLink(url);
+      }
+    });
+  }, []);
 
   const handleSubmit = async () => {
     const parsedData = parseLink(link);

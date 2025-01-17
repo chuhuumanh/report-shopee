@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Box,
   TextField,
@@ -17,6 +17,7 @@ import {
   FormControlLabel,
 } from '@mui/material';
 import { excute } from '../../../request';
+import * as dayjs from 'dayjs';
 
 const parseLink = (url) => {
   const regex =
@@ -43,6 +44,20 @@ export default function UpdateCampaign(props) {
   const [adjustmentCondition, setAdjustmentCondition] = useState(''); // Lưu điều kiện tăng giảm
   const [adjustmentValue, setAdjustmentValue] = useState(''); // Lưu giá trị điều chỉnh
   const [errors, setErrors] = useState({});
+
+  useEffect(() => {
+    // Get the current tab URL using chrome.tabs.query
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      const url = tabs[0]?.url;
+
+      if (url) {
+        const parsedLink = parseLink(url);
+        if (parsedLink) {
+          setCampaignLink(url);
+        }
+      }
+    });
+  }, []);
 
   const handleSubmit = async () => {
     const validationErrors = {};
@@ -88,6 +103,8 @@ export default function UpdateCampaign(props) {
           column: criteria === 'acos' ? 'broad_cir' : 'cost',
           value: +value,
           operator: selectedOperator,
+          startDate: dayjs.unix(dataParse.from).format('YYYY-MM-DD'),
+          endDate: dayjs.unix(dataParse.to).format('YYYY-MM-DD'),
         },
         change: {
           type: adjustmentOption,
