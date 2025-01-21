@@ -25,8 +25,11 @@ import CreateCampaign from './components/CreateCampaign';
 import UpdateCampaign from './components/UpdateCampaign';
 import UpdateBatchCampaign from './components/UpdateBatchCampaign';
 import CreateReportMoney from './components/CreateReportMoney';
+import VideoChatIcon from '@mui/icons-material/VideoChat';
+import ReupLive from './components/ReupLive';
+
 import { get } from '../../request';
-const BACKEND_ENDPOINT = `http://103.162.21.218:5997`;
+const BACKEND_ENDPOINT = `http://localhost:5997`;
 
 const sideBarIcons = {
   get_keyword_by_campaign: <QueryStatsIcon />,
@@ -34,6 +37,7 @@ const sideBarIcons = {
   update_campaign: <TrackChangesIcon />,
   update_batch_campaign: <AdsClickIcon />,
   create_report_money: <PersonSearchIcon />,
+  reup_live: <VideoChatIcon />,
 };
 
 const components = (slug, key, cookies) => {
@@ -45,6 +49,7 @@ const components = (slug, key, cookies) => {
       <UpdateBatchCampaign apiKey={key} cookies={cookies} />
     ),
     create_report_money: <CreateReportMoney apiKey={key} cookies={cookies} />,
+    reup_live: <ReupLive apiKey={key} cookies={cookies} />,
   };
 
   return listComponent[slug];

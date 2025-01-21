@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const axiosInstance = axios.create({
-  baseURL: 'http://103.162.21.218:5997',
+  baseURL: 'http://localhost:5997',
   timeout: 5000,
   headers: {
     'Content-Type': 'application/json',
@@ -33,4 +33,12 @@ const del = (url) => axiosInstance.delete(url);
 
 const excute = (data) => axiosInstance.post(`/shopee/excute`, data);
 
-export { get, post, put, del, excute };
+const postFile = (url, formData) => {
+  return axiosInstance.post(`/uploads`, formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+};
+
+export { get, post, put, del, excute, postFile };
