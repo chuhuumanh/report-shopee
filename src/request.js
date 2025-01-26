@@ -1,8 +1,8 @@
 import axios from 'axios';
 
 const axiosInstance = axios.create({
-  baseURL: 'http://localhost:5997',
-  timeout: 5000,
+  baseURL: 'https://090e-2402-800-623f-b081-bd5e-fee8-27a0-6555.ngrok-free.app',
+  timeout: 50000,
   headers: {
     'Content-Type': 'application/json',
   },

@@ -29,7 +29,7 @@ import VideoChatIcon from '@mui/icons-material/VideoChat';
 import ReupLive from './components/ReupLive';
 
 import { get } from '../../request';
-const BACKEND_ENDPOINT = `http://localhost:5997`;
+const BACKEND_ENDPOINT = `https://090e-2402-800-623f-b081-bd5e-fee8-27a0-6555.ngrok-free.app`;
 
 const sideBarIcons = {
   get_keyword_by_campaign: <QueryStatsIcon />,
