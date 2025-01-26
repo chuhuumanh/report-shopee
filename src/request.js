@@ -1,10 +1,11 @@
 import axios from 'axios';
 
 const axiosInstance = axios.create({
-  baseURL: 'https://090e-2402-800-623f-b081-bd5e-fee8-27a0-6555.ngrok-free.app',
+  baseURL: 'https://c21d-2402-800-623f-b081-7cd6-cb80-4e52-1396.ngrok-free.app',
   timeout: 50000,
   headers: {
     'Content-Type': 'application/json',
+    ['ngrok-skip-browser-warning']: true,
   },
 });
 

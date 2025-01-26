@@ -29,7 +29,7 @@ import VideoChatIcon from '@mui/icons-material/VideoChat';
 import ReupLive from './components/ReupLive';
 
 import { get } from '../../request';
-const BACKEND_ENDPOINT = `https://090e-2402-800-623f-b081-bd5e-fee8-27a0-6555.ngrok-free.app`;
+const BACKEND_ENDPOINT = `https://c21d-2402-800-623f-b081-7cd6-cb80-4e52-1396.ngrok-free.app`;
 
 const sideBarIcons = {
   get_keyword_by_campaign: <QueryStatsIcon />,
@@ -139,6 +139,7 @@ const Popup = () => {
         }
       }
     } catch (error) {
+      console.log(error, 'error');
       setApiKey('');
       setIsKeyActive('');
     }
