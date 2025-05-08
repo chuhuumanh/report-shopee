@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const axiosInstance = axios.create({
-  baseURL: 'https://c21d-2402-800-623f-b081-7cd6-cb80-4e52-1396.ngrok-free.app',
+  baseURL: 'http://117.2.91.138:5997',
   timeout: 50000,
   headers: {
     'Content-Type': 'application/json',
@@ -12,11 +12,9 @@ const axiosInstance = axios.create({
 // Thêm interceptor để xử lý response
 axiosInstance.interceptors.response.use(
   (response) => {
-    // Xử lý response thành công
     return response.data;
   },
   (error) => {
-    // Xử lý lỗi từ response
     if (error.response) {
       console.error('Response error:', error.response);
     } else {
@@ -42,4 +40,12 @@ const postFile = (url, formData) => {
   });
 };
 
-export { get, post, put, del, excute, postFile };
+const uploadVideoFile = (formData) => {
+  return axiosInstance.post(`/shopee/upload-videos`, formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+};
+
+export { get, post, put, del, excute, postFile, uploadVideoFile };

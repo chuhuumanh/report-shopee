@@ -1,5 +1,5 @@
 const axios = require('axios');
-const SERVER_ENDPOINT = `https://c21d-2402-800-623f-b081-7cd6-cb80-4e52-1396.ngrok-free.app`;
+const SERVER_ENDPOINT = `http://117.2.91.138:5997`;
 async function getCookiesShopee() {
   return new Promise((resolve, reject) => {
     let cookiesString = '';

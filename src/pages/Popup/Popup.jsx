@@ -26,10 +26,10 @@ import UpdateCampaign from './components/UpdateCampaign';
 import UpdateBatchCampaign from './components/UpdateBatchCampaign';
 import CreateReportMoney from './components/CreateReportMoney';
 import VideoChatIcon from '@mui/icons-material/VideoChat';
-import ReupLive from './components/ReupLive';
 
 import { get } from '../../request';
-const BACKEND_ENDPOINT = `https://c21d-2402-800-623f-b081-7cd6-cb80-4e52-1396.ngrok-free.app`;
+import ReupVideo from './components/ReupVideo';
+const BACKEND_ENDPOINT = `http://117.2.91.138:5997`;
 
 const sideBarIcons = {
   get_keyword_by_campaign: <QueryStatsIcon />,
@@ -37,7 +37,7 @@ const sideBarIcons = {
   update_campaign: <TrackChangesIcon />,
   update_batch_campaign: <AdsClickIcon />,
   create_report_money: <PersonSearchIcon />,
-  reup_live: <VideoChatIcon />,
+  reup_video: <VideoChatIcon />,
 };
 
 const components = (slug, key, cookies) => {
@@ -49,7 +49,7 @@ const components = (slug, key, cookies) => {
       <UpdateBatchCampaign apiKey={key} cookies={cookies} />
     ),
     create_report_money: <CreateReportMoney apiKey={key} cookies={cookies} />,
-    reup_live: <ReupLive apiKey={key} cookies={cookies} />,
+    reup_video: <ReupVideo apiKey={key} cookies={cookies} />,
   };
 
   return listComponent[slug];
@@ -128,7 +128,12 @@ const Popup = () => {
     try {
       if (apiKey) {
         const resFeature = await axios.get(
-          `${BACKEND_ENDPOINT}/features?key=${apiKey}`
+          `${BACKEND_ENDPOINT}/features?key=${apiKey}`,
+          {
+            headers: {
+              ['ngrok-skip-browser-warning']: true,
+            },
+          }
         );
         const data = resFeature.data;
         const firstData = data[0];
